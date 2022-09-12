@@ -61,10 +61,9 @@ public:
 
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
+        const double word_count = 1.0 / words.size();
         for (const string& word : words) {
-            double count_ = (static_cast<double>(count(words.begin(), words.end(), word)) / words.size());
-            //cout << count_ << endl;
-            documents_[word].insert({document_id, count_});
+            word_to_document_freqs_[word][document_id] += word_count;
         }
         ++document_count_;
     }
@@ -85,13 +84,19 @@ public:
     }
 
 private:
-
+    
+    struct QueryWord {
+        string data;
+        bool is_minus;
+        bool is_stop;
+    };
+    
     struct Query {
         set<string> plus_words;
         set<string> minus_words;
     };
 
-    map<string, map<int, double>> documents_;
+    map<string, map<int, double>> word_to_document_freqs_;
 
     set<string> stop_words_;
 
@@ -110,39 +115,52 @@ private:
         }
         return words;
     }
-
+    
+    QueryWord ParseQueryWord(string text) const {
+        bool is_minus = false;
+        if (text[0] == '-') {
+            is_minus = true;
+            text = text.substr(1);
+        }
+        return {text, is_minus, IsStopWord(text)};
+    }
+    
     Query ParseQuery(const string& text) const {
-        Query query_words;
-        for (const string& word : SplitIntoWordsNoStop(text)) {
-            if (word[0] != '-') {
-                query_words.plus_words.insert(word);
-            }
-            else {
-                query_words.minus_words.insert(word.substr(1));
+        Query query;
+        for (const string& word : SplitIntoWords(text)) {
+            const QueryWord query_word = ParseQueryWord(word);
+            if (!query_word.is_stop) {
+                if (query_word.is_minus) {
+                    query.minus_words.insert(query_word.data);
+                } else {
+                    query.plus_words.insert(query_word.data);
+                }
             }
         }
-        return query_words;
+        return query;
     }
 
-    vector<Document> FindAllDocuments(const Query& query_words) const {
+    vector<Document> FindAllDocuments(const Query& query) const {
         vector<Document> matched_documents;
-        map<int, double> revel;
-        for (const auto& [document, doc] : documents_) {
-            const int n = doc.size();
-            if (query_words.plus_words.count(document) != 0) {
-                for (const auto& [id, count_] : doc) {
-                    revel[id] += count_ * (log(static_cast<double>(document_count_ )/ n));
-                }
+        map<int, double> document_to_relevance;
+        for (const string& word : query.plus_words) {
+            if (word_to_document_freqs_.count(word) == 0) {
+                continue;
+            }
+            for (const auto& [document_id, term_freq] : word_to_document_freqs_.at(word)) {              
+                document_to_relevance[document_id] += term_freq * (log(static_cast<double>(document_count_ ) / word_to_document_freqs_.at(word).size())); 
             }
         }
-        for (const auto& [document, doc] : documents_) {
-            if (query_words.minus_words.count(document) != 0) {
-                for (const auto& [id, count_] : doc) {
-                    revel.erase(id);
-                }
+        
+        for (const string& word : query.minus_words) {
+            if (word_to_document_freqs_.count(word) == 0) {
+                continue;
+            }
+            for (const auto& [document_id, term_freq] : word_to_document_freqs_.at(word)) {              
+                document_to_relevance.erase(document_id); 
             }
         }
-        for (const auto& [id, reverance] : revel) {
+        for (const auto& [id, reverance] : document_to_relevance) {
             matched_documents.push_back({ id, reverance });
         }
         return matched_documents;
