@@ -10,6 +10,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double error_rate = 1e-6;
 
 string ReadLine() {
     string s;
@@ -79,45 +80,29 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query) const {
         return  FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     }
+    
+    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus document_status) const {
+        return  FindTopDocuments(raw_query, [document_status](int document_id, DocumentStatus status, int rating) { return status == document_status; });
+    }
+
 
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        vector<Document> top_documents;
-        if constexpr (is_same_v<DocumentPredicate, DocumentStatus>) {
-            switch (document_predicate) {
-            case DocumentStatus::ACTUAL:
-                top_documents = FindTopDocuments(raw_query, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::ACTUAL; });
-                break;
-            case DocumentStatus::IRRELEVANT:
-                top_documents = FindTopDocuments(raw_query, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::IRRELEVANT; });
-                break;
-            case DocumentStatus::BANNED:
-                top_documents = FindTopDocuments(raw_query, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::BANNED; });
-                break;
-            case DocumentStatus::REMOVED:
-                top_documents = FindTopDocuments(raw_query, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::REMOVED; });
-                break;
-            }
-        }
-        else {
-            const Query query = ParseQuery(raw_query);
-            auto matched_documents = FindAllDocuments(query, document_predicate);
+        const Query query = ParseQuery(raw_query);
+        auto matched_documents = FindAllDocuments(query, document_predicate);
 
-            sort(matched_documents.begin(), matched_documents.end(),
-                [](const Document& lhs, const Document& rhs) {
-                    if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
-                        return lhs.rating > rhs.rating;
-                    }
-                    else {
-                        return lhs.relevance > rhs.relevance;
-                    }
-                });
+        sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
+            if (abs(lhs.relevance - rhs.relevance) < error_rate) {
+                return lhs.rating > rhs.rating;
+            }
+            else {
+                return lhs.relevance > rhs.relevance;
+            }
+        });
             if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
                 matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
             }
-            top_documents = matched_documents;
-        }
-        return top_documents;
+            return matched_documents;
     }
 
     int GetDocumentCount() const {
