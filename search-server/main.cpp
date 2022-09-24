@@ -162,8 +162,8 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
-        return rating_sum / static_cast<int>(ratings.size());
+        //int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
+        return accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size());
     }
 
     struct QueryWord {
