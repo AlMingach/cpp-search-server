@@ -6,11 +6,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-const double error_rate = 1e-6;
+const double ERROR_RATE = 1e-6;
 
 string ReadLine() {
     string s;
@@ -92,7 +93,7 @@ public:
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
-            if (abs(lhs.relevance - rhs.relevance) < error_rate) {
+            if (abs(lhs.relevance - rhs.relevance) < ERROR_RATE) {
                 return lhs.rating > rhs.rating;
             }
             else {
@@ -161,10 +162,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -218,7 +216,8 @@ private:
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
             for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
-                if (document_predicate(document_id, documents_.at(document_id).status, documents_.at(document_id).rating)) {
+                const auto& document_id_data = documents_.at(document_id);
+                if (document_predicate(document_id, document_id_data.status, document_id_data.rating)) {
                     document_to_relevance[document_id] += term_freq * inverse_document_freq;
                 }
             }
