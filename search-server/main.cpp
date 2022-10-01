@@ -99,7 +99,7 @@ public:
             else {
                 return lhs.relevance > rhs.relevance;
             }
-            });
+        });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
@@ -404,10 +404,11 @@ void TestRelevanceSort() {
         server.AddDocument(doc_id_2, content_2, DocumentStatus::ACTUAL, ratings_2);
         const auto found_docs = server.FindTopDocuments("in the"s);
         ASSERT_EQUAL(found_docs.size(), 2);
-        const Document& doc0 = found_docs[0];
-        const Document& doc1 = found_docs[1];
-        ASSERT_EQUAL(doc0.id, doc_id_1);
-        ASSERT_EQUAL(doc1.id, doc_id_2);
+        //const Document& doc0 = found_docs[0];
+        //const Document& doc1 = found_docs[1];
+        //ASSERT_EQUAL(doc0.id, doc_id_1);
+        //ASSERT_EQUAL(doc1.id, doc_id_2);
+        ASSERT(found_docs[0].relevance > found_docs[1].relevance);
     }
 }
 void TestCalculatingRating() {
@@ -429,7 +430,7 @@ void TestCalculatingRating() {
         ASSERT_EQUAL(doc1.rating, 2);
     }
 }
-void TestFiltrationPredicat() {
+void TestFiltrationPredicate() {
     const int doc_id_1 = 42;
     const string content_1 = "cat in the city"s;
     const vector<int> ratings_1 = { 3, 3, 3 };
@@ -460,17 +461,44 @@ void TestFiltrationStatus() {
     const int doc_id_1 = 42;
     const string content_1 = "cat in the city"s;
     const vector<int> ratings_1 = { 3, 3, 3 };
+
     const int doc_id_2 = 13;
     const string content_2 = "the dog and clock"s;
     const vector<int> ratings_2 = { 1, 2, 3 };
+
+    const int doc_id_3 = 18;
+    const string content_3 = "black and white"s;
+    const vector<int> ratings_3 = { 3, 3, 3 };
+
+    const int doc_id_4 = 58;
+    const string content_4 = "hedgehog in the fog"s;
+    const vector<int> ratings_4 = { 1, 2, 3 };
     {
         SearchServer server;
         server.AddDocument(doc_id_1, content_1, DocumentStatus::ACTUAL, ratings_1);
         server.AddDocument(doc_id_2, content_2, DocumentStatus::BANNED, ratings_2);
-        const auto found_docs = server.FindTopDocuments("in and"s, DocumentStatus::BANNED);
-        ASSERT_EQUAL(found_docs.size(), 1);
-        const Document& doc0 = found_docs[0];
-        ASSERT_EQUAL(doc0.id, doc_id_2);
+        server.AddDocument(doc_id_3, content_3, DocumentStatus::IRRELEVANT, ratings_3);
+        server.AddDocument(doc_id_4, content_4, DocumentStatus::REMOVED, ratings_4);
+        const auto found_docs_1 = server.FindTopDocuments("in and"s, DocumentStatus::ACTUAL);
+        const auto found_docs_2 = server.FindTopDocuments("in and"s, DocumentStatus::BANNED);
+        const auto found_docs_3 = server.FindTopDocuments("in and"s, DocumentStatus::IRRELEVANT);
+        const auto found_docs_4 = server.FindTopDocuments("in and"s, DocumentStatus::REMOVED);
+
+        ASSERT_EQUAL(found_docs_1.size(), 1);
+        const Document& doc1 = found_docs_1[0];
+        ASSERT_EQUAL(doc1.id, doc_id_1);
+
+        ASSERT_EQUAL(found_docs_2.size(), 1);
+        const Document& doc2 = found_docs_2[0];
+        ASSERT_EQUAL(doc2.id, doc_id_2);
+
+        ASSERT_EQUAL(found_docs_3.size(), 1);
+        const Document& doc3 = found_docs_3[0];
+        ASSERT_EQUAL(doc3.id, doc_id_3);
+
+        ASSERT_EQUAL(found_docs_4.size(), 1);
+        const Document& doc4 = found_docs_4[0];
+        ASSERT_EQUAL(doc4.id, doc_id_4);
     }
 }
 
@@ -502,7 +530,7 @@ void TestSearchServer() {
     RUN_TEST(TestMatchedDocuments);
     RUN_TEST(TestRelevanceSort);
     RUN_TEST(TestCalculatingRating);
-    RUN_TEST(TestFiltrationPredicat);
+    RUN_TEST(TestFiltrationPredicate);
     RUN_TEST(TestFiltrationStatus);
     RUN_TEST(TestCalculatingRelevance);
 }
