@@ -1,3 +1,6 @@
+//Тема 18. Обработка ошибок.Исключения
+//Урок 6. Обработка ошибок в поисковой системе
+
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -7,7 +10,6 @@
 #include <utility>
 #include <vector>
 #include <numeric>
-#include <optional>
 
 using namespace std;
 
@@ -88,7 +90,6 @@ enum class DocumentStatus {
 class SearchServer {
 public:
 
-    //inline static constexpr int INVALID_DOCUMENT_ID = -1;
 
     template <typename StopWordsContainer>
     explicit SearchServer(const StopWordsContainer& stop_words) : stop_words_(UniqueContainerWithoutEmpty(stop_words))
@@ -110,7 +111,7 @@ public:
     void AddDocument(int document_id, const string& document, DocumentStatus status,
         const vector<int>& ratings) {
 
-        if (!CheckID(document_id) || !IsValidWord(document)) {
+        if (!CheckID(document_id)) {
             throw invalid_argument("the document id already exists or is less than zero");
         }
 
@@ -233,6 +234,9 @@ private:
     QueryWord ParseQueryWord(string text) const {
         bool is_minus = false;
         if (text[0] == '-') {
+            if (!IsValidStopWord(text)) {
+                throw invalid_argument("minus words are set incorrectly");
+            }
             is_minus = true;
             text = text.substr(1);
         }
@@ -252,9 +256,6 @@ private:
         }
 
         for (const string& word : SplitIntoWords(text)) {
-            if (!IsValidStopWord(word)) {
-                throw invalid_argument("minus words are set incorrectly");
-            }
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -324,5 +325,4 @@ private:
         }
         return true;
     }
-
 };
