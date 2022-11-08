@@ -1,6 +1,4 @@
 #include "search_server.h"
-#include <algorithm>
-
 
      SearchServer::SearchServer(const std::string& stop_words) : stop_words_(UniqueContainerWithoutEmpty(SplitIntoWords(stop_words)))
     {
