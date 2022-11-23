@@ -27,8 +27,7 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
         doc_id_words_freq_[document_id][word] += inv_word_count;
     }
     documents_.emplace(document_id, DocumentData{ ComputeAverageRating(ratings), status });
-    added_doc_id_.push_back(document_id);
-    //added_doc_id_.insert(document_id);
+    added_doc_id_.insert(document_id);
 }
 
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query) const {
@@ -73,33 +72,18 @@ std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
     return std::tuple<std::vector<std::string>, DocumentStatus>{ matched_words, documents_.at(document_id).status };
 }
 
-//int SearchServer::GetDocumentId(int index) const {
-//    if (index < 0 || index >  added_doc_id_.size()) {
-//        throw std::out_of_range("invalid document ID");
-//    }
-//    return  added_doc_id_[index];
-//}
-
-std::vector<int>::iterator SearchServer::begin() {
+std::set<int>::iterator SearchServer::begin() {
     return added_doc_id_.begin();
 }
 
-std::vector<int>::iterator SearchServer::end() {
+std::set<int>::iterator SearchServer::end() {
     return added_doc_id_.end();
 }
 
-//std::set<int>::iterator SearchServer::begin() {
-//    return added_doc_id_.begin();
-//}
-//
-//std::set<int>::iterator SearchServer::end() {
-//    return added_doc_id_.end();
-//}
-
 const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id) const {
+    static const std::map<std::string, double> empty_map_;
 
-    //return (documents_.count(document_id)) ? empty_map_ : doc_id_words_freq_.at(document_id);
-    return (count(added_doc_id_.begin(), added_doc_id_.end(), document_id) == 0) ? empty_map_ : doc_id_words_freq_.at(document_id);
+    return (doc_id_words_freq_.count(document_id) == 0) ? empty_map_ : doc_id_words_freq_.at(document_id);
 }
 
 void SearchServer::RemoveDocument(int document_id) {
@@ -185,6 +169,7 @@ bool SearchServer::IsValidStopWord(const std::string& word) {
 bool SearchServer::CheckID(const int& id) const {
 
     return (documents_.count(id) != 0 || id < 0) ? false : true;
+
 }
 
 void AddDocument(SearchServer& search_server, int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& ratings) {

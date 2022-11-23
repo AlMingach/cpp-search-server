@@ -8,7 +8,7 @@
 
 #include "document.h"
 #include "string_processing.h"
-#include "log_duration.h"
+//#include "log_duration.h"
 
 using namespace std::literals;
 
@@ -37,15 +37,9 @@ public:
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
 
-    //int GetDocumentId(int index) const;
+    std::set<int>::iterator begin();
 
-    std::vector<int>::iterator begin();
-
-    std::vector<int>::iterator end();
-
-    //std::set<int>::iterator begin();
-
-    //std::set<int>::iterator end();
+    std::set<int>::iterator end();
 
     void RemoveDocument(int document_id);
 
@@ -60,10 +54,8 @@ private:
     std::set<std::string> stop_words_; // Контейнер стоп-слов
     std::map<std::string, std::map<int, double>> word_to_document_freqs_; // Контейнер слово - ID и IDF-TF
     std::map<int, DocumentData> documents_; // ID Документа и его рейтинг и статус
-    std::vector<int> added_doc_id_;
-    //std::set<int> added_doc_id_;
+    std::set<int> added_doc_id_;
     std::map<int, std::map<std::string, double>> doc_id_words_freq_;
-    const std::map<std::string, double> empty_map_;
 
     bool IsStopWord(const std::string& word) const;
 
@@ -133,6 +125,7 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 template<typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(const Query& query, DocumentPredicate document_predicate) const {
     std::map<int, double> document_to_relevance;
+
     for (const std::string& word : query.plus_words) {
         if (word_to_document_freqs_.count(word) == 0) {
             continue;
