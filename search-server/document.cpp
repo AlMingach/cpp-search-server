@@ -1,14 +1,14 @@
 #include "document.h"
 
 Document::Document()
-    :id(0)
+    : id(0)
     , relevance(0.0)
     , rating(0)
 {
 }
 
 Document::Document(int id_doc, double relevance_doc, int rating_doc)
-    :id(id_doc)
+    : id(id_doc)
     , relevance(relevance_doc)
     , rating(rating_doc)
 {

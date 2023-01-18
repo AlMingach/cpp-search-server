@@ -1,6 +1,7 @@
 #include "test_example_functions.h"
 #include "search_server.h"
 #include "remove_duplicates.h"
+#include "process_queries.h"
 
 using namespace std::literals;
 
@@ -57,6 +58,13 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
         SearchServer server("in the"s);
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         ASSERT_HINT(server.FindTopDocuments("in"s).empty(),
+            "Stop words must be excluded from documents"s);
+    }
+
+    {
+        SearchServer server(" "s);
+        server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
+        ASSERT_HINT(!server.FindTopDocuments("in"s).empty(),
             "Stop words must be excluded from documents"s);
     }
 }
@@ -318,6 +326,58 @@ void TestRemoveDuplicate() {
 
 }
 
+void TestProcessQueries() {
+    SearchServer search_server("and with"s);
+    int id = 0;
+    for (
+        const std::string& text : {
+            "funny pet and nasty rat"s,
+            "funny pet with curly hair"s,
+            "funny pet and not very nasty rat"s,
+            "pet with rat and rat and rat"s,
+            "nasty rat with curly hair"s,
+        }
+        ) {
+        search_server.AddDocument(++id, text, DocumentStatus::ACTUAL, { 1, 2 });
+    }
+    const std::vector<std::string> queries = {
+        "nasty rat -not"s,
+        "not very funny nasty pet"s,
+        "curly hair"s
+    };
+    id = 0;
+    std::vector<size_t> assert_result{ 3, 5, 2 };
+    for ( const auto& documents : ProcessQueries(search_server, queries)) {
+        assert(documents.size() == assert_result[id++]);
+    }
+}
+
+void TestProcessQueriesJoined() {
+    SearchServer search_server("and with"s);
+    int id = 0;
+    for (
+        const std::string& text : {
+            "funny pet and nasty rat"s,
+            "funny pet with curly hair"s,
+            "funny pet and not very nasty rat"s,
+            "pet with rat and rat and rat"s,
+            "nasty rat with curly hair"s,
+        }
+        ) {
+        search_server.AddDocument(++id, text, DocumentStatus::ACTUAL, { 1, 2 });
+    }
+    const std::vector<std::string> queries = {
+        "nasty rat -not"s,
+        "not very funny nasty pet"s,
+        "curly hair"s
+    };
+    id = 0;
+    std::vector<size_t> assert_result_id{ 1, 5, 4, 3, 1, 2, 5, 4, 2, 5 };
+    for (const auto& documents : ProcessQueriesJoined(search_server, queries)) {
+        assert(documents.id == assert_result_id[id++]);
+    }
+}
+
 void TestSearchServer() {
     RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
     RUN_TEST(TestExcludeStopWords);
@@ -330,4 +390,6 @@ void TestSearchServer() {
     RUN_TEST(TestCalculatingRelevance);
     RUN_TEST(TestRemoveDocument);
     RUN_TEST(TestRemoveDuplicate);
+    RUN_TEST(TestProcessQueries);
+    RUN_TEST(TestProcessQueriesJoined);
 }

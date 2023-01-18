@@ -48,4 +48,8 @@ void TestRemoveDocument();
 
 void TestRemoveDuplicate();
 
+void TestProcessQueries();
+
+void TestProcessQueriesJoined();
+
 void TestSearchServer();

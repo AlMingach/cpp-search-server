@@ -4,9 +4,9 @@
 #include <vector>
 
 template <typename StringContainer>
-std::set<std::string> UniqueContainerWithoutEmpty(const StringContainer& text) {
-    std::set<std::string> no_empty_text;
-    for (const auto& word : text) {
+std::set<std::string, std::less<>> UniqueContainerWithoutEmpty(const StringContainer& text) {
+    std::set<std::string, std::less<>> no_empty_text;
+    for (const auto word : text) {
         if (!word.empty()) {
             no_empty_text.insert(word);
         }
@@ -14,4 +14,4 @@ std::set<std::string> UniqueContainerWithoutEmpty(const StringContainer& text) {
     return no_empty_text;
 }
 
-std::vector<std::string> SplitIntoWords(const std::string& text);
+std::vector<std::string_view> SplitIntoWords(std::string_view text);
