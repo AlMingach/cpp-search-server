@@ -41,31 +41,17 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string_view raw_
     return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
 }
 
-std::vector<Document> SearchServer::FindTopDocuments(const std::execution::sequenced_policy&, const std::string_view raw_query) const {
-    return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
-}
-
-std::vector<Document> SearchServer::FindTopDocuments(const std::execution::parallel_policy&, const std::string_view raw_query) const {
-    return FindTopDocuments(std::execution::par, raw_query, DocumentStatus::ACTUAL);
-}
-
 std::vector<Document> SearchServer::FindTopDocuments(const std::string_view raw_query, DocumentStatus document_status) const {
     return FindTopDocuments(raw_query, [document_status](int document_id, DocumentStatus status, int rating) { return status == document_status; });
-}
-
-std::vector<Document> SearchServer::FindTopDocuments(const std::execution::sequenced_policy&, const std::string_view raw_query, DocumentStatus document_status) const {
-    return FindTopDocuments(raw_query, [document_status](int document_id, DocumentStatus status, int rating) { return status == document_status; });
-}
-
-std::vector<Document> SearchServer::FindTopDocuments(const std::execution::parallel_policy&, const std::string_view raw_query, DocumentStatus document_status) const {
-    return FindTopDocuments(std::execution::par, raw_query, [document_status](int document_id, DocumentStatus status, int rating) { return status == document_status; });
 }
 
 int SearchServer::GetDocumentCount() const {
     return static_cast<int>(documents_.size());
 }
 
-std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(const std::string_view raw_query, int document_id) const {
+using DocQueryAndStatus = std::tuple<std::vector<std::string_view>, DocumentStatus>;
+
+DocQueryAndStatus SearchServer::MatchDocument(const std::string_view raw_query, int document_id) const {
 
     if (added_doc_id_.count(document_id) == 0) {
         throw std::out_of_range("the document id does not exist");
@@ -92,17 +78,18 @@ std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDoc
     return { matched_words, documents_.at(document_id).status };
 }
 
-std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(const std::execution::sequenced_policy&, const std::string_view raw_query, int document_id) const {
+
+DocQueryAndStatus SearchServer::MatchDocument(const std::execution::sequenced_policy&, const std::string_view raw_query, int document_id) const {
     return MatchDocument(raw_query, document_id);
 }
 
-std::tuple<std::vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(const std::execution::parallel_policy&, const std::string_view raw_query, int document_id) const {
+DocQueryAndStatus SearchServer::MatchDocument(const std::execution::parallel_policy&, const std::string_view raw_query, int document_id) const {
     if (added_doc_id_.count(document_id) == 0) {
         throw std::out_of_range("the document id does not exist");
     }
     const auto query = ParseQuery(raw_query, false);
 
-    std::tuple<std::vector<std::string_view>, DocumentStatus> result{ {}, documents_.at(document_id).status };
+    DocQueryAndStatus result{ {}, documents_.at(document_id).status };
 
     if (std::any_of(std::execution::par, query.minus_words.begin(), query.minus_words.end(), [this, &document_id](const auto word) {
         return doc_id_words_freq_.at(document_id).count(word) != 0;
@@ -224,9 +211,6 @@ SearchServer::QueryWord SearchServer::ParseQueryWord(std::string_view text) cons
     return { text, is_minus, IsStopWord(text) };
 }
 
-SearchServer::Query SearchServer::ParseQuery(const std::string_view text) const {
-    return ParseQuery(text, true);
-}
 
 SearchServer::Query SearchServer::ParseQuery(const std::string_view text, bool sort) const {
     Query query;
