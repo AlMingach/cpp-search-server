@@ -166,7 +166,7 @@ void SearchServer::RemoveDocument(const std::execution::parallel_policy&, int do
         });
 
 
-        std::for_each(/*std::execution::par, */words.begin(), words.end(), [this, &document_id](const auto& word) {
+        std::for_each(words.begin(), words.end(), [this, &document_id](const auto& word) {
             auto iter = word_of_documents_.find(word);
             if ((*iter).empty()) {
                 word_to_document_freqs_.erase(word);

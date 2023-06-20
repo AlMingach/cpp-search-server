@@ -72,8 +72,7 @@ private:
     std::map<int, DocumentData> documents_; // ID Документа и его рейтинг и статус
     std::set<int> added_doc_id_;
     std::map<int, std::map<std::string_view, double>> doc_id_words_freq_;
-    std::set<std::string, std::less<>> word_of_documents_; // Решил оставить свою реализацию. Если хранить в структуре document, то
-    //при удалении в RemoveDocument из вектора documents_ структуры в некоторых ситуациях в word_to_document_freqs_ и doc_id_words_freq_ значения string_view инвалидируется
+    std::set<std::string, std::less<>> word_of_documents_;
 
     bool IsStopWord(const std::string_view word) const;
 
@@ -142,7 +141,7 @@ std::vector<Document> SearchServer::FindTopDocuments(ExecutionPolicy& policy, co
     const auto query = ParseQuery(raw_query);
     auto matched_documents = FindAllDocuments(policy, query, document_predicate);
 
-    sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
+    std::sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
         if (std::abs(lhs.relevance - rhs.relevance) < ERROR_RATE) {
             return lhs.rating > rhs.rating;
         }

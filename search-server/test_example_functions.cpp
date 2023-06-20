@@ -392,4 +392,5 @@ void TestSearchServer() {
     RUN_TEST(TestRemoveDuplicate);
     RUN_TEST(TestProcessQueries);
     RUN_TEST(TestProcessQueriesJoined);
+    std::cout << "All tests complite!\n" << std::endl;
 }
